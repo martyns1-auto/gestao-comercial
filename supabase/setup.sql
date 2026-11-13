@@ -247,3 +247,55 @@ revoke all on function public.adjust_stock(uuid,numeric,text) from public, anon,
 grant execute on function public.record_purchase(jsonb,jsonb) to authenticated;
 grant execute on function public.record_sale(jsonb,jsonb) to authenticated;
 grant execute on function public.adjust_stock(uuid,numeric,text) to authenticated;
+
+-- Controle de gastos pessoais; dados separados do financeiro empresarial.
+create table if not exists public.personal_transactions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  transaction_type text not null check (transaction_type in ('income','expense')),
+  description text not null,
+  category text not null default 'Outros',
+  amount numeric(12,2) not null check (amount > 0),
+  transaction_date date not null default current_date,
+  status text not null default 'completed' check (status in ('pending','completed')),
+  created_at timestamptz not null default now()
+);
+create table if not exists public.personal_installments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  title text not null,
+  category text not null default 'Outros',
+  total_amount numeric(12,2) not null check (total_amount > 0),
+  installment_count integer not null check (installment_count > 0),
+  paid_installments integer not null default 0 check (paid_installments >= 0 and paid_installments <= installment_count),
+  first_due_date date not null default current_date,
+  status text not null default 'active' check (status in ('active','paid','cancelled')),
+  created_at timestamptz not null default now()
+);
+alter table public.personal_transactions enable row level security;
+alter table public.personal_installments enable row level security;
+drop policy if exists personal_transactions_own on public.personal_transactions;
+create policy personal_transactions_own on public.personal_transactions for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+drop policy if exists personal_installments_own on public.personal_installments;
+create policy personal_installments_own on public.personal_installments for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
+revoke all on public.personal_transactions, public.personal_installments from anon, authenticated;
+grant select, insert, update, delete on public.personal_transactions, public.personal_installments to authenticated;
+
+-- Relatórios semanais de preços de mercado, escritos somente pela Edge Function.
+create table if not exists public.market_price_reviews (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  week_start date not null,
+  products_checked integer not null default 0 check (products_checked >= 0),
+  items jsonb not null default '[]'::jsonb,
+  insights text not null default '',
+  errors jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  unique (user_id, week_start)
+);
+alter table public.market_price_reviews enable row level security;
+drop policy if exists market_price_reviews_select_own on public.market_price_reviews;
+create policy market_price_reviews_select_own on public.market_price_reviews
+  for select to authenticated using ((select auth.uid()) = user_id);
+revoke all on public.market_price_reviews from anon, authenticated;
+grant select on public.market_price_reviews to authenticated;

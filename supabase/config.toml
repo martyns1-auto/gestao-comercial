@@ -1,0 +1,2 @@
+[functions.weekly-price-review]
+verify_jwt = false
