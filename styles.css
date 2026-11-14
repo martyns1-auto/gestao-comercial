@@ -243,3 +243,30 @@ th{font-size:12px}td{font-size:14px}
   .top-right{gap:6px}
   .credit-card-dock{max-width:42vw}
 }
+
+.csv-import-dialog{width:min(980px,calc(100vw - 28px));max-width:980px}
+.csv-file-name{margin:8px 0;color:var(--ink);font-size:13px;font-weight:650;overflow-wrap:anywhere}
+.csv-import-options{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0}
+.csv-header-toggle{grid-column:1/-1;display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:#f8faf8;font-size:13px}
+.csv-header-toggle input,.csv-preview-table input{width:18px;height:18px;accent-color:var(--green)}
+.csv-import-map{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
+.csv-import-map label,.csv-import-options .field label{display:block;margin:0 0 5px;font-size:13px;font-weight:650;color:var(--ink)}
+.csv-import-map select,.csv-import-options .field input,.csv-import-options .field select{width:100%;min-height:42px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);font:inherit}
+.csv-import-options .field{margin:0}
+.csv-import-summary{margin:10px 0;padding:10px 12px;border-radius:9px;background:#f4f7f4;color:#506157;font-size:13px;line-height:1.5}
+.csv-import-note{margin:8px 0 0;color:#6c6251;font-size:12px;line-height:1.5}
+.csv-preview-scroll{max-height:320px;overflow:auto;border:1px solid var(--line);border-radius:9px}
+.csv-preview-table{width:100%;border-collapse:collapse;font-size:12px}
+.csv-preview-table th,.csv-preview-table td{padding:9px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+.csv-preview-table th{position:sticky;top:0;background:#f7f9f7;color:#536258;z-index:1}
+.csv-preview-table tr:last-child td{border-bottom:0}
+.csv-warning{color:#a33d34;font-weight:650}
+@media(max-width:720px){
+  .page-head .head-actions #personalDiagnostics{grid-column:auto}
+  .csv-import-options{grid-template-columns:1fr}
+  .csv-import-map{grid-template-columns:1fr}
+  .csv-header-toggle,.csv-import-map{grid-column:auto}
+  .csv-preview-scroll{max-height:280px}
+  .csv-preview-table{min-width:760px}
+  .csv-import-dialog .dialog-actions{display:grid;grid-template-columns:1fr}
+}
