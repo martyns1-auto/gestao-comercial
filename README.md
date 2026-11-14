@@ -24,8 +24,8 @@ Aplicação web para gestão financeira, estoque, compras, vendas e fornecedores
 
 1. Aplique a parte aditiva de `supabase/setup.sql` no projeto `gestao-comercial`.
 2. Publique `supabase/functions/weekly-price-review` como Edge Function `weekly-price-review`. A configuração está em `supabase/config.toml`; a função valida a sessão do usuário para chamadas do app e um segredo próprio para o cron.
-3. Em Supabase → Edge Functions → Secrets, cadastre `OPENAI_API_KEY` e `PRICE_REVIEW_CRON_SECRET`. `OPENAI_MODEL` é opcional (padrão `gpt-4.1-mini`). A chave da OpenAI fica apenas no servidor.
+3. Em Supabase → Edge Functions → Secrets, cadastre `OPENAI_API_KEY`, `PRICE_REVIEW_CRON_SECRET`, `SHOPEE_AFFILIATE_APP_ID` e `SHOPEE_AFFILIATE_SECRET`. `OPENAI_MODEL` é opcional (padrão `gpt-4.1-mini`). Todas ficam apenas no servidor. A API de Afiliados Shopee exige acesso/credenciais aprovados; sem elas, o relatório informa que a fonte Shopee está pendente.
 4. Habilite `pg_cron`, `pg_net` e Vault. No Vault, crie os segredos `project_url`, `publishable_key` e `cron_secret`; `cron_secret` deve ter o mesmo valor de `PRICE_REVIEW_CRON_SECRET`.
 5. Execute `supabase/weekly_price_review_cron.sql` para agendar a verificação às segundas-feiras, às 09:00 de Brasília. O botão “Comparar agora” permite executar manualmente, com limite de uma análise e chamada de IA por conta por semana.
 
-A comparação consulta anúncios públicos e exibe exemplos para conferência. Produtos similares podem não ser equivalentes. A OpenAI recebe somente nome/categoria do produto, preço da loja e métricas agregadas da busca; ela oferece recomendações, mas nunca altera preços automaticamente.
+A comparação consulta anúncios públicos do Mercado Livre e ofertas de produtos disponíveis pela API de Afiliados Shopee. A amostra da Shopee não representa necessariamente todo o catálogo do marketplace, e produtos podem não ser equivalentes; confira os exemplos. A OpenAI recebe somente nome/categoria, preço da loja e métricas agregadas (mínimo, mediana, média e quantidade de ofertas). O relatório limita chamadas por semana e nunca altera preços automaticamente.

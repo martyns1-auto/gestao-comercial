@@ -76,8 +76,54 @@ async function mercadoLivreSearch(product: Product) {
   };
 }
 
+function shopeeConfigured() {
+  return Boolean(Deno.env.get("SHOPEE_AFFILIATE_APP_ID") && Deno.env.get("SHOPEE_AFFILIATE_SECRET"));
+}
+
+async function shopeeSearch(product: Product) {
+  const appId = Deno.env.get("SHOPEE_AFFILIATE_APP_ID");
+  const secret = Deno.env.get("SHOPEE_AFFILIATE_SECRET");
+  if (!appId || !secret) return null;
+
+  const keyword = [product.name, product.category].filter(Boolean).join(" ").slice(0, 100);
+  const query = `query { productOfferV2(keyword: ${JSON.stringify(keyword)}, sortType: 1, page: 1, limit: 50) { nodes { productName productLink priceMin priceMax } pageInfo { hasNextPage } } }`;
+  const body = JSON.stringify({ query });
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const signatureSource = new TextEncoder().encode(`${appId}${timestamp}${body}${secret}`);
+  const digest = await crypto.subtle.digest("SHA-256", signatureSource);
+  const signature = [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const response = await fetch("https://open-api.affiliate.shopee.com.br/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `SHA256 Credential=${appId}, Timestamp=${timestamp}, Signature=${signature}`,
+    },
+    body,
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!response.ok) throw new Error(`Shopee respondeu ${response.status}.`);
+  const payload = await response.json();
+  if (payload.errors?.length) throw new Error("A Shopee recusou a consulta. Confira App ID e acesso à API de Afiliados.");
+  const listings = (payload.data?.productOfferV2?.nodes || []).filter((item: any) =>
+    Number.isFinite(Number(item.priceMin)) && Number(item.priceMin) > 0
+  );
+  const prices = listings.map((item: any) => Number(item.priceMin));
+  return {
+    configured: true,
+    sample_count: prices.length,
+    minimum_price: prices.length ? Math.min(...prices) : null,
+    median_price: prices.length ? median(prices) : null,
+    average_price: prices.length ? prices.reduce((sum: number, value: number) => sum + value, 0) / prices.length : null,
+    examples: listings.slice(0, 3).map((item: any) => ({
+      title: String(item.productName || "Oferta Shopee").slice(0, 180),
+      price: Number(item.priceMin),
+      url: String(item.productLink || ""),
+    })),
+  };
+}
+
 async function makeInsight(items: Record<string, unknown>[]) {
-  if (!items.some((item) => Number(item.sample_count) > 0)) {
+  if (!items.some((item) => Object.values(item.marketplaces as Record<string, any> || {}).some((market: any) => Number(market.sample_count) > 0))) {
     return "Não encontrei anúncios comparáveis nesta busca. Confira se os nomes dos produtos estão claros e tente novamente.";
   }
   const key = Deno.env.get("OPENAI_API_KEY");
@@ -86,10 +132,14 @@ async function makeInsight(items: Record<string, unknown>[]) {
     product_name: item.product_name,
     category: item.category,
     our_price: item.our_price,
-    minimum_price: item.minimum_price,
-    median_price: item.median_price,
-    average_price: item.average_price,
-    sample_count: item.sample_count,
+    marketplaces: Object.fromEntries(
+      Object.entries(item.marketplaces as Record<string, any> || {}).map(([source, market]) => [source, {
+        minimum_price: market.minimum_price,
+        median_price: market.median_price,
+        average_price: market.average_price,
+        sample_count: market.sample_count,
+      }]),
+    ),
   }));
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
@@ -101,7 +151,7 @@ async function makeInsight(items: Record<string, unknown>[]) {
       input: [
         {
           role: "system",
-          content: "Você é um assistente de gestão comercial. Responda em português brasileiro, com até 5 recomendações curtas e práticas. Use apenas os dados fornecidos. Compare preços de forma cautelosa: anúncios podem não ser exatamente equivalentes, e os preços são uma amostra pública do Mercado Livre. Aponte oportunidades de revisar preço e atenção ao estoque baixo. Não invente dados nem trate a sugestão como alteração automática de preço.",
+          content: "Você é um assistente de gestão comercial. Responda em português brasileiro, com até 5 recomendações curtas e práticas. Use apenas os dados fornecidos. Compare preços com cautela: ofertas da Shopee vêm da API de afiliados e anúncios podem não ser exatamente equivalentes. Aponte oportunidades de revisar preço. Não invente dados nem trate a sugestão como alteração automática de preço.",
         },
         { role: "user", content: JSON.stringify(comparisonData) },
       ],
@@ -122,7 +172,9 @@ async function reviewUser(userId: string) {
     "market_price_reviews",
     `select=*&user_id=eq.${encodeURIComponent(userId)}&week_start=eq.${weekStart()}&limit=1`,
   );
-  if (existing.length) return { review: existing[0], cached: true };
+  const priorItems = Array.isArray(existing[0]?.items) ? existing[0].items as Record<string, any>[] : [];
+  const needsShopeeRetry = shopeeConfigured() && priorItems.some((item) => item.marketplaces?.shopee?.configured === false);
+  if (existing.length && !needsShopeeRetry) return { review: existing[0], cached: true };
 
   const products = await restRows<Product>(
     "products",
@@ -141,25 +193,13 @@ async function reviewUser(userId: string) {
     const batch = activeProducts.slice(offset, offset + 3);
     const results = await Promise.all(batch.map(async (product) => {
       const stock = stockById.get(product.id) || 0;
+      const marketplaces: Record<string, any> = {};
       try {
-        return {
-          product_name: product.name,
-          category: product.category,
-          our_price: product.sale_price == null ? null : Number(product.sale_price),
-          stock,
-          min_stock: Number(product.min_stock) || 0,
-          low_stock: stock <= (Number(product.min_stock) || 0),
-          ...(await mercadoLivreSearch(product)),
-        };
+        marketplaces.mercado_livre = { configured: true, ...(await mercadoLivreSearch(product)) };
       } catch (error) {
-        errors.push(`${product.name}: ${error instanceof Error ? error.message : "falha na busca"}`);
-        return {
-          product_name: product.name,
-          category: product.category,
-          our_price: product.sale_price == null ? null : Number(product.sale_price),
-          stock,
-          min_stock: Number(product.min_stock) || 0,
-          low_stock: stock <= (Number(product.min_stock) || 0),
+        errors.push(`${product.name} · Mercado Livre: ${error instanceof Error ? error.message : "falha na busca"}`);
+        marketplaces.mercado_livre = {
+          configured: true,
           sample_count: 0,
           minimum_price: null,
           median_price: null,
@@ -167,6 +207,36 @@ async function reviewUser(userId: string) {
           examples: [],
         };
       }
+      try {
+        const shopee = await shopeeSearch(product);
+        marketplaces.shopee = shopee || {
+          configured: false,
+          sample_count: 0,
+          minimum_price: null,
+          median_price: null,
+          average_price: null,
+          examples: [],
+        };
+      } catch (error) {
+        errors.push(`${product.name} · Shopee: ${error instanceof Error ? error.message : "falha na busca"}`);
+        marketplaces.shopee = {
+          configured: true,
+          sample_count: 0,
+          minimum_price: null,
+          median_price: null,
+          average_price: null,
+          examples: [],
+        };
+      }
+      return {
+        product_name: product.name,
+        category: product.category,
+        our_price: product.sale_price == null ? null : Number(product.sale_price),
+        stock,
+        min_stock: Number(product.min_stock) || 0,
+        low_stock: stock <= (Number(product.min_stock) || 0),
+        marketplaces,
+      };
     }));
     items.push(...results);
   }
