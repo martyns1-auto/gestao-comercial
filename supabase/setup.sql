@@ -258,7 +258,20 @@ create table if not exists public.personal_transactions (
   amount numeric(12,2) not null check (amount > 0),
   transaction_date date not null default current_date,
   status text not null default 'completed' check (status in ('pending','completed')),
+  payment_method text not null default 'cash',
   created_at timestamptz not null default now()
+);
+alter table public.personal_transactions add column if not exists payment_method text not null default 'cash';
+alter table public.personal_transactions drop constraint if exists personal_transactions_payment_method_check;
+alter table public.personal_transactions add constraint personal_transactions_payment_method_check check (payment_method in ('cash','pix','debit','credit_card','other'));
+create table if not exists public.personal_category_budgets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  month_start date not null check (extract(day from month_start) = 1),
+  category text not null check (length(btrim(category)) between 1 and 80),
+  limit_amount numeric(12,2) not null check (limit_amount > 0),
+  created_at timestamptz not null default now(),
+  unique (user_id, month_start, category)
 );
 create table if not exists public.personal_installments (
   id uuid primary key default gen_random_uuid(),
@@ -280,6 +293,13 @@ drop policy if exists personal_installments_own on public.personal_installments;
 create policy personal_installments_own on public.personal_installments for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 revoke all on public.personal_transactions, public.personal_installments from anon, authenticated;
 grant select, insert, update, delete on public.personal_transactions, public.personal_installments to authenticated;
+alter table public.personal_category_budgets enable row level security;
+drop policy if exists personal_category_budgets_own on public.personal_category_budgets;
+create policy personal_category_budgets_own on public.personal_category_budgets
+  for all to authenticated using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+revoke all on public.personal_category_budgets from anon, authenticated;
+grant select, insert, update, delete on public.personal_category_budgets to authenticated;
 
 -- Relatórios semanais de preços de mercado, escritos somente pela Edge Function.
 create table if not exists public.market_price_reviews (

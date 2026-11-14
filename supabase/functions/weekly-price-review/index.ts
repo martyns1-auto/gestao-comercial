@@ -283,18 +283,23 @@ Deno.serve(async (request: Request) => {
       if (!authResponse.ok) return json({ error: "Sua sessão expirou. Entre novamente." }, 401);
       const user = await authResponse.json();
       userId = user.id;
+      const roles = await restRows<{ role: string }>(
+        "app_user_roles",
+        `select=role&user_id=eq.${encodeURIComponent(userId)}&limit=1`,
+      );
+      if (roles[0]?.role !== "admin") return json({ error: "Esta função está disponível somente para a administração." }, 403);
     }
 
     if (isCron) {
-      const profiles = await restRows<{ user_id: string }>("business_profiles", "select=user_id");
+      const admins = await restRows<{ user_id: string }>("app_user_roles", "select=user_id&role=eq.admin");
       let processed = 0;
       const failed: string[] = [];
-      for (const profile of profiles) {
+      for (const admin of admins) {
         try {
-          await reviewUser(profile.user_id);
+          await reviewUser(admin.user_id);
           processed++;
         } catch {
-          failed.push(profile.user_id);
+          failed.push(admin.user_id);
         }
       }
       return json({ processed, failed: failed.length });
