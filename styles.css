@@ -136,3 +136,93 @@ th{font-size:11px}td{font-size:13px}
 .page-head .head-actions{flex-wrap:wrap}
 #personalDiagnostics{border-style:dashed;color:#4b6654}
 @media(max-width:720px){.page-head .head-actions{display:grid;grid-template-columns:1fr 1fr}.page-head .head-actions #personalDiagnostics{grid-column:1/-1}}
+
+/* Leitura confortável e hierarquia visual consistente. */
+:root{--danger:#b42318;--danger-soft:#fff0ee;--shadow:0 8px 24px #24392d0b}
+body{font-size:15px;line-height:1.55;color:var(--ink)}
+small{font-size:max(12px,1em);line-height:1.45}
+h1{font-size:clamp(29px,3vw,34px);line-height:1.2}
+h2,.panel-head h2{font-size:18px;line-height:1.35}
+.muted,.panel-head p,.personal-period-label,.personal-compare span,#personalInvoiceRows>span{font-size:14px;line-height:1.55}
+.eyebrow,.nav-label{font-size:12px;letter-spacing:.8px}
+.brand-copy small,.auth-art>span,.auth-art div,.auth-security,.metrics article>small,.badge,.stock-value,.market-item-title span,.market-source small,.market-examples a{font-size:12px;line-height:1.45}
+.settings-card label,.auth-card label,.dialog label,.price-grid label{font-size:14px}
+.settings-card input,.settings-card select,.price-grid input,.price-grid select{font-size:15px;min-height:42px}
+.price-breakdown,.low-row span{font-size:13px;line-height:1.5}
+.app-notice,.message{font-size:14px;line-height:1.55}
+.crumb,.top-right{font-size:13px}
+.nav-item{min-height:44px;font-size:14px}
+.privacy strong{font-size:13px}.privacy p,.side-bottom>small{font-size:12px}
+.button{min-height:42px;padding:10px 15px;font-size:14px}
+.row-action,.link-button,.text-link{font-size:13px;line-height:1.4}
+input,select,textarea{font-size:15px;line-height:1.4}
+th{font-size:12px}td{font-size:14px}
+.panel,.summary-card,.metrics article{border-radius:14px}
+.panel{padding:22px;margin-bottom:18px}
+.panel-head{gap:18px;margin-bottom:16px}
+.summary-row{gap:16px;margin-bottom:18px}
+.summary-card{padding:19px 20px;gap:8px}
+.summary-card>span,.metrics article>span{font-size:14px;line-height:1.4}
+.summary-card>strong{font-size:23px;line-height:1.25}
+.personal-controls{padding:16px 18px;gap:12px;margin:18px 0 9px}
+.personal-controls label{font-size:14px}
+.personal-controls input,.personal-controls select{min-height:44px;font-size:14px}
+.personal-compare,.personal-invoice{gap:18px;padding:19px 21px}
+.personal-compare strong{font-size:15px}
+.invoice-totals span{font-size:13px}.invoice-totals strong{font-size:20px}
+.goal-row-head strong,.recurring-row strong{font-size:15px}
+.goal-row-head span,.recurring-row>span,.budget-row-head strong,.budget-row-head>span{font-size:14px}
+.goal-row small,.recurring-row small,.budget-row small,.row-subtext{font-size:12px;line-height:1.5}
+.budget-empty,.empty.small,.empty{font-size:14px;line-height:1.55}
+.bar-row,.personal-row{font-size:14px;line-height:1.5}
+.data-row{gap:12px;padding:14px 4px}
+.data-row strong{font-size:15px}
+.status{font-size:12px;padding:5px 9px}
+.month-chart-col{font-size:12px}.month-chart-col>strong{font-size:12px}
+.field-help,.toast,.notice,.personal-form-message{font-size:14px;line-height:1.55}
+.credit-card-dock{font-size:13px}.credit-card-dock strong{font-size:16px}
+.negative{color:var(--danger)!important;font-weight:750}
+.status.cancelled,.over .budget-state{color:var(--danger)}
+.personal-row .negative{background:var(--danger-soft);border-radius:7px;padding:5px 8px;width:max-content}
+@media(max-width:1050px){.sidebar{width:218px}.main{margin-left:218px}.personal-controls{gap:10px}.summary-row{gap:12px}}
+@media(max-width:720px){
+  body{font-size:15px}
+  .sidebar{width:64px}
+  .main{margin-left:64px;padding-left:16px;padding-right:16px}
+  .topbar{min-height:60px}
+  .view{padding-top:24px}
+  .page-head{gap:14px;margin-bottom:18px}
+  .page-head .head-actions{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:8px}
+  .page-head .head-actions .button{width:100%;min-height:44px;padding:9px 10px;font-size:13px}
+  .page-head .head-actions #personalDiagnostics{grid-column:1/-1}
+  .summary-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .summary-card{padding:14px;min-width:0}
+  .summary-card>span{font-size:13px}
+  .summary-card>strong{font-size:19px;overflow-wrap:anywhere}
+  .panel{padding:17px;margin-bottom:14px}
+  .personal-controls{display:grid;grid-template-columns:1fr 1fr;padding:14px;gap:9px}
+  .personal-controls label{align-self:end;font-size:13px}
+  .personal-controls input,.personal-controls select{width:100%;min-width:0;min-height:44px;font-size:14px}
+  .personal-controls input[type="search"]{grid-column:1/-1}
+  .personal-compare,.personal-invoice{grid-template-columns:1fr;padding:16px;gap:13px}
+  .personal-grid{gap:12px}
+  .personal-row{grid-template-columns:minmax(105px,1.25fr) minmax(80px,1fr) minmax(76px,.8fr) minmax(90px,1fr) minmax(90px,.9fr) auto;min-width:720px}
+  #personalRows{overflow-x:auto}
+  .data-row{gap:8px;font-size:13px}
+  .data-row strong{font-size:14px}
+  .status{font-size:11px}
+  .credit-card-dock{max-width:48vw;padding:7px 9px;font-size:11px}
+  .credit-card-dock strong{font-size:13px}
+  .month-chart-bars{gap:6px}
+  .month-chart-col>strong{font-size:10px}
+}
+@media(max-width:420px){
+  .main{padding-left:12px;padding-right:12px}
+  .summary-row{gap:8px}
+  .summary-card{padding:12px}
+  .summary-card>strong{font-size:17px}
+  .personal-controls{grid-template-columns:1fr}
+  .personal-controls input[type="search"]{grid-column:auto}
+  .top-right{gap:6px}
+  .credit-card-dock{max-width:42vw}
+}
