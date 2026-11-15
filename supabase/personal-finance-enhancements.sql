@@ -18,7 +18,7 @@ drop policy if exists personal_category_budgets_owner_manage on public.personal_
 create policy personal_category_budgets_owner_manage on public.personal_category_budgets
   for all to authenticated using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
-revoke all on public.personal_category_budgets from anon, authenticated;
+revoke all on public.personal_category_budgets from PUBLIC, anon, authenticated;
 grant select, insert, update, delete on public.personal_category_budgets to authenticated;
 
 
@@ -73,9 +73,9 @@ create policy personal_savings_goals_owner_manage on public.personal_savings_goa
   for all to authenticated using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
 
-revoke all on public.personal_recurring_bills, public.personal_savings_goals from anon, authenticated;
+revoke all on public.personal_recurring_bills, public.personal_savings_goals from PUBLIC, anon, authenticated;
 grant select, insert, update, delete on public.personal_recurring_bills, public.personal_savings_goals to authenticated;
-revoke all on public.personal_transactions from anon;
+revoke all on public.personal_transactions from PUBLIC, anon, authenticated;
 grant select, insert, update, delete on public.personal_transactions to authenticated;
 
 -- Atualiza o cache do Data API para reconhecer as colunas adicionadas acima.

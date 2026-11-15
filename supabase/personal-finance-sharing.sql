@@ -12,7 +12,7 @@ create table if not exists public.personal_finance_shares (
 );
 
 alter table public.personal_finance_shares enable row level security;
-revoke all on public.personal_finance_shares from anon, authenticated;
+revoke all on public.personal_finance_shares from PUBLIC, anon, authenticated;
 grant select on public.personal_finance_shares to authenticated;
 drop policy if exists personal_finance_shares_read_participants on public.personal_finance_shares;
 create policy personal_finance_shares_read_participants

@@ -42,13 +42,13 @@ drop policy if exists personal_category_budgets_own on public.personal_category_
 create policy personal_category_budgets_own on public.personal_category_budgets
   for all to authenticated using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
-revoke all on public.personal_category_budgets from anon, authenticated;
+revoke all on public.personal_category_budgets from PUBLIC, anon, authenticated;
 grant select, insert, update, delete on public.personal_category_budgets to authenticated;
 drop policy if exists personal_transactions_own on public.personal_transactions;
 create policy personal_transactions_own on public.personal_transactions for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 drop policy if exists personal_installments_own on public.personal_installments;
 create policy personal_installments_own on public.personal_installments for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
-revoke all on public.personal_transactions, public.personal_installments from anon, authenticated;
+revoke all on public.personal_transactions, public.personal_installments from PUBLIC, anon, authenticated;
 grant select, insert, update, delete on public.personal_transactions, public.personal_installments to authenticated;
 
 -- Relatórios semanais de preços de mercado, escritos somente pela Edge Function.
@@ -67,7 +67,7 @@ alter table public.market_price_reviews enable row level security;
 drop policy if exists market_price_reviews_select_own on public.market_price_reviews;
 create policy market_price_reviews_select_own on public.market_price_reviews
   for select to authenticated using ((select auth.uid()) = user_id);
-revoke all on public.market_price_reviews from anon, authenticated;
+revoke all on public.market_price_reviews from PUBLIC, anon, authenticated;
 grant select on public.market_price_reviews to authenticated;
 
 -- Gestão de acesso por perfil.
@@ -84,7 +84,7 @@ create table if not exists public.app_user_roles (
   created_at timestamptz not null default now()
 );
 alter table public.app_user_roles enable row level security;
-revoke all on public.app_user_roles from anon, authenticated;
+revoke all on public.app_user_roles from PUBLIC, anon, authenticated;
 grant select on public.app_user_roles to authenticated;
 drop policy if exists app_user_roles_select_self on public.app_user_roles;
 create policy app_user_roles_select_self on public.app_user_roles
@@ -166,11 +166,11 @@ begin
       execute format('create policy %I on public.%I for select to authenticated using ((select private.is_app_admin()))', table_name || '_admin_read_all', table_name);
       execute format('create policy %I on public.%I for all to authenticated using ((select private.is_app_admin()) and (select auth.uid()) = user_id) with check ((select private.is_app_admin()) and (select auth.uid()) = user_id)', table_name || '_admin_manage_own', table_name);
     end if;
-    execute format('revoke all on public.%I from anon', table_name);
+    execute format('revoke all on public.%I from PUBLIC, anon, authenticated', table_name);
     execute format('grant select, insert, update, delete on public.%I to authenticated', table_name);
   end loop;
 end;
 $$;
 alter view public.inventory_summary set (security_invoker = true);
-revoke all on public.inventory_summary from anon;
+revoke all on public.inventory_summary from PUBLIC, anon, authenticated;
 grant select on public.inventory_summary to authenticated;

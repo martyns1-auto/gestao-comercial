@@ -64,9 +64,11 @@ create policy marketing_campaigns_insert_own on public.marketing_campaigns for i
 create policy marketing_campaigns_update_own on public.marketing_campaigns for update to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 create policy marketing_campaigns_delete_own on public.marketing_campaigns for delete to authenticated using ((select auth.uid()) = user_id);
 
-revoke all on public.business_profiles, public.marketplace_fees, public.marketing_campaigns from anon, authenticated;
+revoke all on public.business_profiles, public.marketplace_fees, public.marketing_campaigns from PUBLIC, anon, authenticated;
 grant select, insert, update on public.business_profiles to authenticated;
 grant select, insert, update, delete on public.marketplace_fees, public.marketing_campaigns to authenticated;
+revoke all on public.products, public.suppliers, public.purchases, public.purchase_items,
+  public.sales, public.sale_items, public.stock_movements, public.expenses, public.financial_transactions from PUBLIC, anon, authenticated;
 grant select, insert, update on public.products, public.suppliers, public.purchases, public.purchase_items,
   public.sales, public.sale_items, public.stock_movements, public.expenses, public.financial_transactions to authenticated;
 
@@ -80,7 +82,7 @@ select user_id, product_id, sum(case
   else quantity end)::numeric as stock
 from public.stock_movements
 group by user_id, product_id;
-revoke all on public.inventory_summary from anon;
+revoke all on public.inventory_summary from PUBLIC, anon, authenticated;
 grant select on public.inventory_summary to authenticated;
 
 create or replace function public.record_purchase(p_data jsonb, p_items jsonb)
@@ -291,14 +293,14 @@ drop policy if exists personal_transactions_own on public.personal_transactions;
 create policy personal_transactions_own on public.personal_transactions for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
 drop policy if exists personal_installments_own on public.personal_installments;
 create policy personal_installments_own on public.personal_installments for all to authenticated using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
-revoke all on public.personal_transactions, public.personal_installments from anon, authenticated;
+revoke all on public.personal_transactions, public.personal_installments from PUBLIC, anon, authenticated;
 grant select, insert, update, delete on public.personal_transactions, public.personal_installments to authenticated;
 alter table public.personal_category_budgets enable row level security;
 drop policy if exists personal_category_budgets_own on public.personal_category_budgets;
 create policy personal_category_budgets_own on public.personal_category_budgets
   for all to authenticated using ((select auth.uid()) = user_id)
   with check ((select auth.uid()) = user_id);
-revoke all on public.personal_category_budgets from anon, authenticated;
+revoke all on public.personal_category_budgets from PUBLIC, anon, authenticated;
 grant select, insert, update, delete on public.personal_category_budgets to authenticated;
 
 -- Relatórios semanais de preços de mercado, escritos somente pela Edge Function.
@@ -317,5 +319,5 @@ alter table public.market_price_reviews enable row level security;
 drop policy if exists market_price_reviews_select_own on public.market_price_reviews;
 create policy market_price_reviews_select_own on public.market_price_reviews
   for select to authenticated using ((select auth.uid()) = user_id);
-revoke all on public.market_price_reviews from anon, authenticated;
+revoke all on public.market_price_reviews from PUBLIC, anon, authenticated;
 grant select on public.market_price_reviews to authenticated;
